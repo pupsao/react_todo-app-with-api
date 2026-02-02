@@ -1,12 +1,6 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import cn from 'classnames';
 import { UserWarning } from './UserWarning';
 import {
@@ -72,8 +66,6 @@ export const App: React.FC = () => {
 
     return () => clearTimeout(errorTimer);
   }, [error]);
-
-  const closeError = useCallback(() => setError(null), []);
 
   useEffect(() => {
     if (!loading) {
