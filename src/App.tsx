@@ -1,7 +1,6 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import cn from 'classnames';
+import React, { useEffect, useRef, useState } from 'react';
 import { UserWarning } from './UserWarning';
 import {
   createNewTodo,
@@ -16,6 +15,7 @@ import { TodoList } from './components/TodoList';
 import { Footer } from './components/Footer';
 import { FilterType } from './types/filterType';
 import { ErrorMessages } from './types/Errors';
+import { Notification } from './components/ErrorNotification';
 
 export const App: React.FC = () => {
   const inputField = useRef<HTMLInputElement | null>(null);
@@ -73,20 +73,12 @@ export const App: React.FC = () => {
     }
   }, [loading]);
 
-  const allTodosIsComplited = useMemo(
-    () => todos.every(todo => todo.completed) && todos.length > 0,
-    [todos],
-  );
+  const allTodosIsComplited =
+    todos.every(todo => todo.completed) && todos.length > 0;
 
-  const todoIsComplited = useMemo(
-    () => todos.some(todo => todo.completed),
-    [todos],
-  );
+  const todoIsComplited = todos.some(todo => todo.completed);
 
-  const activeTodosCount = useMemo(
-    () => todos.filter(todo => !todo.completed).length,
-    [todos],
-  );
+  const activeTodosCount = todos.filter(todo => !todo.completed).length;
 
   const handleCreateTodo = (event: React.FormEvent) => {
     event.preventDefault();
@@ -165,13 +157,13 @@ export const App: React.FC = () => {
         .filter(todo => idsToUpdate.includes(todo.id))
         .map(todo => updateTodo({ ...todo, completed: shouldComplete })),
     )
-      .then(result => {
-        if (result.some(r => r.status === 'rejected')) {
+      .then(results => {
+        if (results.some(result => result.status === 'rejected')) {
           setError(ErrorMessages.ToUpdateSome);
         }
 
-        setTodos(curr =>
-          curr.map(todo => {
+        setTodos(prevTodos =>
+          prevTodos.map(todo => {
             if (idsToUpdate.includes(todo.id)) {
               return { ...todo, completed: shouldComplete };
             }
@@ -244,25 +236,7 @@ export const App: React.FC = () => {
         )}
       </div>
 
-      {/* DON'T use conditional rendering to hide the notification */}
-      {/* Add the 'hidden' class to hide the message smoothly */}
-      <div
-        data-cy="ErrorNotification"
-        className={cn(
-          'notification is-danger is-light has-text-weight-normal',
-          { hidden: !error },
-        )}
-      >
-        <button
-          data-cy="HideErrorButton"
-          type="button"
-          className="delete"
-          onClick={() => setError(null)}
-        />
-        {/* show only one message at a time */}
-
-        {error}
-      </div>
+      <Notification error={error} onClose={() => setError(null)} />
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import cn from 'classnames';
 import { FilterType } from '../types/filterType';
+import { filterLinks } from '../types/FilterLinks';
 
 interface Props {
   filter: FilterType;
@@ -23,43 +24,22 @@ export const Footer: React.FC<Props> = ({
         {activeTodosCount} items left
       </span>
 
-      {/* Active link should have the 'selected' class */}
       <nav className="filter" data-cy="Filter">
-        <a
-          href="#/"
-          className={cn('filter__link', {
-            selected: filter === FilterType.All,
-          })}
-          data-cy="FilterLinkAll"
-          onClick={() => setFilter(FilterType.All)}
-        >
-          All
-        </a>
-
-        <a
-          href="#/active"
-          className={cn('filter__link', {
-            selected: filter === FilterType.Active,
-          })}
-          data-cy="FilterLinkActive"
-          onClick={() => setFilter(FilterType.Active)}
-        >
-          Active
-        </a>
-
-        <a
-          href="#/completed"
-          className={cn('filter__link', {
-            selected: filter === FilterType.Completed,
-          })}
-          data-cy="FilterLinkCompleted"
-          onClick={() => setFilter(FilterType.Completed)}
-        >
-          Completed
-        </a>
+        {filterLinks.map(({ type, href, label, dataCy }) => (
+          <a
+            key={type}
+            href={href}
+            className={cn('filter__link', {
+              selected: filter === type,
+            })}
+            data-cy={dataCy}
+            onClick={() => setFilter(type)}
+          >
+            {label}
+          </a>
+        ))}
       </nav>
 
-      {/* this button should be disabled if there are no completed todos */}
       <button
         type="button"
         className="todoapp__clear-completed"
