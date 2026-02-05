@@ -17,31 +17,35 @@ import { FilterType } from './types/filterType';
 import { ErrorMessages } from './types/Errors';
 import { Notification } from './components/ErrorNotification';
 
-export const App: React.FC = () => {
-  const inputField = useRef<HTMLInputElement | null>(null);
-
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [error, setError] = useState<ErrorMessages | null>(null);
-  const [filter, setFilter] = useState<FilterType>(FilterType.All);
-
-  const [title, setTitle] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-  const [tempTodo, setTempTodo] = useState<Todo | null>(null);
-  const [processingId, setProcessingId] = useState<number[]>([]);
-
-  const hasTodos = todos.length > 0;
-
-  const filteredTodos = todos.filter(todo => {
+const filterTodos = (todos: Todo[], filter: FilterType): Todo[] => {
+  return todos.filter(todo => {
     switch (filter) {
       case FilterType.Active:
         return !todo.completed;
+
       case FilterType.Completed:
         return todo.completed;
+
       case FilterType.All:
       default:
         return true;
     }
   });
+};
+
+export const App: React.FC = () => {
+  const inputField = useRef<HTMLInputElement | null>(null);
+
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [error, setError] = useState<ErrorMessages | null>(null);
+  const [filter, setFilter] = useState(FilterType.All);
+
+  const [title, setTitle] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [tempTodo, setTempTodo] = useState<Todo | null>(null);
+  const [processingId, setProcessingId] = useState<number[]>([]);
+
+  const hasTodos = todos.length > 0;
 
   useEffect(() => {
     setError(null);
@@ -72,6 +76,8 @@ export const App: React.FC = () => {
       inputField.current?.focus();
     }
   }, [loading]);
+
+  const filteredTodos = filterTodos(todos, filter);
 
   const allTodosIsComplited =
     todos.every(todo => todo.completed) && todos.length > 0;
@@ -143,38 +149,39 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleToggleAll = () => {
-    const shouldComplete = !allTodosIsComplited;
+  const handleToggleAll = async () => {
+    const shouldComplete = !todos.every(todo => todo.completed);
 
-    const idsToUpdate = todos
-      .filter(todo => todo.completed !== shouldComplete)
-      .map(t => t.id);
+    const todosToUpdate = todos.filter(
+      todo => todo.completed !== shouldComplete,
+    );
 
-    setProcessingId(prev => [...prev, ...idsToUpdate]);
+    setLoading(true);
 
-    Promise.allSettled(
-      todos
-        .filter(todo => idsToUpdate.includes(todo.id))
-        .map(todo => updateTodo({ ...todo, completed: shouldComplete })),
-    )
-      .then(results => {
-        if (results.some(result => result.status === 'rejected')) {
-          setError(ErrorMessages.ToUpdateSome);
-        }
+    const results = await Promise.allSettled(
+      todosToUpdate.map(todo =>
+        updateTodo({ ...todo, completed: shouldComplete }),
+      ),
+    );
 
-        setTodos(prevTodos =>
-          prevTodos.map(todo => {
-            if (idsToUpdate.includes(todo.id)) {
-              return { ...todo, completed: shouldComplete };
-            }
+    const hasError = results.some(result => result.status === 'rejected');
 
-            return todo;
-          }),
-        );
-      })
-      .finally(() => {
-        setProcessingId(prev => prev.filter(id => !idsToUpdate.includes(id)));
-      });
+    if (hasError) {
+      setError(ErrorMessages.ToUpdateSome);
+      setLoading(false);
+
+      return;
+    }
+
+    setTodos(prevTodos =>
+      prevTodos.map(todo =>
+        todo.completed !== shouldComplete
+          ? { ...todo, completed: shouldComplete }
+          : todo,
+      ),
+    );
+
+    setLoading(false);
   };
 
   const handleDeleteTodo = (id: number) => {
@@ -192,7 +199,9 @@ export const App: React.FC = () => {
   };
 
   const handleRemoveAllCompleted = () => {
-    todos.filter(t => t.completed).forEach(todo => handleDeleteTodo(todo.id));
+    todos
+      .filter(item => item.completed)
+      .forEach(todo => handleDeleteTodo(todo.id));
   };
 
   if (!USER_ID) {

@@ -1,6 +1,6 @@
 import { FilterType } from './filterType';
 
-export const filterLinks = [
+export const FILTER_LINKS = [
   {
     type: FilterType.All,
     href: '#/',
